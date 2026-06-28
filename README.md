@@ -1,71 +1,90 @@
-# FindYourTrip 🗺️✨
+# FindYourTrip 🗺️
 
-An elegant, AI-powered travel recommendation and itinerary planner application. It curates personalized travel recommendations based on starting location, budget, preferred travel experiences, maximum travel distance, duration, and preferred mode of travel (Car, Bus, Train, or Airplane). 
+An AI-powered travel recommendation and itinerary planning platform that helps users discover personalized destinations based on their location, budget, travel distance, preferred experiences, trip duration, and preferred mode of transportation.
+
+FindYourTrip combines AI-driven recommendations, real-time location services, route planning, and cloud-based trip management to create a personalized travel planning experience.
 
 ---
 
 ## 🌟 Key Features
 
-*   **Custom AI Travel Advice**: Recommends 8–10 real travel destinations tailored directly to your preferences using the Llama 3.3 model on Groq.
-*   **Transit-Aware Budget Planning**: Incorporates travel modes (Car, Bus, Train, and Flight) with dynamic budget calculations and accurate travel time estimates.
-*   **Rich Visuals**: Pulls dynamic, real-world imagery for suggested destinations using the Google Places API.
-*   **Premium Interactive Map Integration**: Employs Google Maps Embed & directions to provide route guidance from your starting location to the destination.
-*   **Trip Dashboard ("My Trips")**:
-    *   **Inline renaming** of saved trips.
-    *   **Trip grouping** with visual folder tags and filter pills.
-    *   **Instant link sharing** to send customized travel options to friends.
-*   **Glassmorphism UI**: Beautifully designed dark-themed interface built using Tailwind CSS v4, containing dynamic hover glows and backdrop filters.
+### 🤖 AI-Powered Travel Recommendations
+- Generates personalized travel suggestions based on user preferences such as:
+  - Starting location
+  - Budget
+  - Maximum travel distance
+  - Preferred experiences
+  - Trip duration
+  - Transportation mode
+- Uses the Llama 3.3 model through Groq API to provide structured travel recommendations.
+
+### 💰 Budget & Transit-Aware Trip Planning
+- Calculates estimated trip expenses based on selected transportation modes
+- Provides estimated travel duration and cost breakdowns to help users plan efficiently.
+
+### 📍 Location-Based Destination Discovery
+- Finds suitable destinations within the user's specified travel radius.
+- Uses Google Places API to retrieve:
+  - Destination images
+  - Place information
+  - Nearby attractions
+
+### 🗺️ Interactive Maps & Navigation
+- Integrates Google Maps services for:
+  - Location search and geocoding
+  - Route visualization
+  - Distance calculation
+  - Travel directions between locations
+
+### 📂 Trip Dashboard & Management
+Users can manage their saved travel plans through:
+- Personalized "My Trips" dashboard
+- Saved trip history
+- Inline trip renaming
+- Trip organization using categories and tags
+- Shareable trip links for easy collaboration
+
+### 🎨 Modern User Interface
+- Responsive dark-themed interface built with Tailwind CSS.
+- Includes:
+  - Glassmorphism design
+  - Interactive hover effects
+  - Animated UI components
+  - Smooth navigation experience
 
 ---
 
-## 🛠️ Technical Stack
+# 🛠️ Technical Stack
 
--   **Frontend**: React (Vite, lazy-loaded routing, dynamic code-splitting)
--   **Styling**: Tailwind CSS v4 (Glassmorphic panels, animated background grids, and interactive glow borders)
--   **AI Inference**: Groq API (`llama-3.3-70b-versatile` running in structured JSON mode)
--   **Maps & Photos**: Google Maps API (JavaScript SDK Geocoding, Directions API, Static Maps, and Places Service)
--   **Database & Auth**: Firebase (Google Sign-In, Cloud Firestore for user-specific search history and saved trips)
+## Frontend
+- React.js
+- Vite
+- React Router
+
+## UI & Styling
+- Tailwind CSS v4
+
+## Artificial Intelligence
+- Groq API
+- Llama 3.3 70B Versatile model
+- Structured JSON-based AI responses for travel recommendations
+
+## Maps & Location Services
+- Google Maps API:
+  - Maps JavaScript API
+  - Geocoding API
+  - Directions API
+  - Places API
+  - Static Maps API
+
+## Backend & Cloud Services
+- Firebase Authentication
+  - Google Sign-In integration
+- Cloud Firestore
+  - User-specific trip history
+  - Saved trips
+  - Shared trip data
+- Firebase Hosting
 
 ---
 
-## 🚀 Setup & Run Locally
-
-### 1. Prerequisites
-Make sure you have [Node.js](https://nodejs.org) installed.
-
-### 2. Configure Environment Variables
-Create a file named `.env` in the root of the project (this is automatically ignored in `.gitignore`) and define the following variables:
-
-```env
-# Firebase Settings
-VITE_FIREBASE_API_KEY=your_firebase_api_key
-VITE_FIREBASE_AUTH_DOMAIN=your_project.firebaseapp.com
-VITE_FIREBASE_PROJECT_ID=your_project_id
-VITE_FIREBASE_STORAGE_BUCKET=your_project.firebasestorage.app
-VITE_FIREBASE_MESSAGING_SENDER_ID=your_messaging_sender_id
-VITE_FIREBASE_APP_ID=your_app_id
-VITE_FIREBASE_MEASUREMENT_ID=your_measurement_id
-
-# Google Maps API
-VITE_GOOGLE_MAPS_API_KEY=your_google_maps_api_key
-
-# Groq AI API
-VITE_GROQ_API_KEY=your_groq_api_key
-```
-
-You can refer to `.env.example` as a template.
-
-### 3. Install Dependencies
-```bash
-npm install
-```
-
-### 4. Run Development Server
-```bash
-npm run dev
-```
-
-### 5. Production Build
-```bash
-npm run build
-```
