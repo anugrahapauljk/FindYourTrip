@@ -1,148 +1,87 @@
 const GROQ_API_KEY = import.meta.env.VITE_GROQ_API_KEY;
 const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
 
-export async function getAIRecommendations({ location, coordinates, maxDistance, budget, experiences, duration, travelMode }) {
-  const systemPrompt = `You are an expert AI travel advisor. Given a user's location, budget, travel radius, interests, trip duration, and preferred mode of travel, recommend 8-10 travel destinations.
+// Request deduplication cache
+const pendingRequests = new Map();
 
-The user's preferred travel mode is: ${travelMode || 'car'}. You MUST calculate travel costs, travel time, and the full budget breakdown based on this travel mode specifically.
-
-Travel mode pricing guidelines (approximate per person for Indian travel):
-- Car: ₹8-12 per km (fuel + tolls), flexible timing
-- Bus: ₹1-3 per km (state/private bus), slower but economical
-- Train: ₹1-4 per km (sleeper to AC), moderate speed, book in advance
-- Airplane: ₹3000-8000 base + ₹2-5 per km for short routes, fastest for long distances
-
-You MUST return ONLY a valid JSON array (no markdown, no explanation) with this structure:
-[
-  {
-    "id": "unique-slug",
-    "name": "Destination Name",
-    "description": "2-3 sentence description of the destination",
-    "distance": "XXX km",
-    "distanceValue": 150,
-    "travelMode": "${travelMode || 'car'}",
-    "travelTime": "X hours by ${travelMode || 'car'}",
-    "estimatedCost": {
-      "min": 3000,
-      "max": 5000,
-      "currency": "INR",
-      "breakdown": {
-        "travel": 1500,
-        "stay": 2000,
-        "food": 1000,
-        "activities": 500
-      }
-    },
-    "matchPercentage": 92,
-    "matchReasons": ["Within budget", "Matches nature preference", "Perfect for weekend trips"],
-    "activities": ["Trekking", "Sightseeing", "Photography"],
-    "experienceTags": ["Nature", "Adventure"],
-    "bestTimeToVisit": "October to March",
-    "highlights": ["Tea gardens", "Misty mountains", "Colonial architecture"],
-    "nearbyAttractions": [
-      { "name": "Attraction Name", "distance": "5 km", "type": "Waterfall" }
-    ],
-    "imageQuery": "keyword for destination photo",
-    "state": "State Name",
-    "country": "India"
+// Helper to deduplicate identical concurrent promises (e.g. React Strict Mode renders)
+function deduplicate(key, fetchFn) {
+  if (pendingRequests.has(key)) {
+    return pendingRequests.get(key);
   }
-]
+  const promise = fetchFn().finally(() => {
+    pendingRequests.delete(key);
+  });
+  pendingRequests.set(key, promise);
+  return promise;
+}
 
-IMPORTANT RULES:
-- All destinations must be real places
-- Distances must be realistic from the user's location
-- Costs must be in INR and realistic for Indian travel
-- Travel cost in breakdown MUST be calculated based on the user's selected travel mode (${travelMode || 'car'})
-- Travel time MUST reflect the selected travel mode
-- Match percentage should reflect how well the destination fits ALL criteria
-- Sort by match percentage descending
-- Return 8-10 destinations
-- Return ONLY the JSON array, nothing else`;
-
-  const userMessage = `Find travel destinations for me:
-- Current Location: ${location} (Lat: ${coordinates?.lat || 'unknown'}, Lng: ${coordinates?.lng || 'unknown'})
-- Maximum Travel Distance: ${maxDistance} km
-- Budget: \u20b9${budget}
-- Preferred Experiences: ${experiences.join(', ')}
-- Trip Duration: ${duration}
-- Preferred Travel Mode: ${travelMode || 'car'}
-
-Recommend the best matching destinations within my constraints. Calculate all travel costs and times based on my preferred travel mode (${travelMode || 'car'}).`;
-
+// Helper to fetch with exponential backoff for 429 rate limit errors
+async function fetchWithBackoff(url, options, retries = 3, delay = 1000) {
   try {
-    const response = await fetch(GROQ_API_URL, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${GROQ_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'llama-3.3-70b-versatile',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: userMessage }
-        ],
-        temperature: 0.7,
-        max_tokens: 8000,
-        response_format: { type: 'json_object' }
-      }),
-    });
-
+    const response = await fetch(url, options);
+    
+    if (response.status === 429 && retries > 0) {
+      console.warn(`Rate limited (429). Retrying in ${delay}ms... (${retries} retries left)`);
+      await new Promise(resolve => setTimeout(resolve, delay));
+      return fetchWithBackoff(url, options, retries - 1, delay * 2);
+    }
+    
     if (!response.ok) {
-      throw new Error(`Groq API error: ${response.status}`);
-    }
-
-    const data = await response.json();
-    const content = data.choices[0]?.message?.content;
-    
-    if (!content) throw new Error('Empty AI response');
-    
-    let parsed = JSON.parse(content);
-    // Handle both array and object with destinations key
-    if (!Array.isArray(parsed)) {
-      parsed = parsed.destinations || parsed.recommendations || Object.values(parsed)[0];
+      throw new Error(`HTTP error! status: ${response.status}`);
     }
     
-    return Array.isArray(parsed) ? parsed : [];
+    return response;
   } catch (error) {
-    console.error('AI Recommendation Error:', error);
+    if (retries > 0) {
+      console.warn(`Fetch failed (${error.message}). Retrying in ${delay}ms... (${retries} retries left)`);
+      await new Promise(resolve => setTimeout(resolve, delay));
+      return fetchWithBackoff(url, options, retries - 1, delay * 2);
+    }
     throw error;
   }
 }
 
-export async function getDestinationDetails(destinationName, userLocation, duration) {
-  const systemPrompt = `You are an expert travel guide. Given a destination name, user location, and trip duration, provide comprehensive travel information.
+export async function getAIRecommendations({ location, coordinates, maxDistance, budget, experiences, duration, travelMode }) {
+  const cacheKey = `recommend-${location}-${maxDistance}-${budget}-${experiences.join(',')}-${duration}-${travelMode}`;
 
-If the trip duration is more than 1 day (e.g., "2-3 days", "weekend", "1 week"), you MUST generate an "itinerary" array containing a day-by-day plan. Otherwise, return an empty "itinerary" array.
+  return deduplicate(cacheKey, async () => {
+    const systemPrompt = `You are a travel advisor. Recommend 8-10 real Indian destinations from ${location} matching: max distance ${maxDistance}km, budget ₹${budget}, experiences: ${experiences.join(', ')}, duration: ${duration}, mode: ${travelMode || 'car'}.
 
-Return ONLY valid JSON with this structure:
+Calculate costs (INR) and travel times specifically for ${travelMode || 'car'}.
+
+Return ONLY a JSON object:
 {
-  "name": "Destination",
-  "fullDescription": "Detailed 4-5 sentence description",
-  "history": "Brief history of the place",
-  "thingsToDo": [
-    { "name": "Activity", "description": "Brief description", "duration": "2 hours", "cost": "Free" }
-  ],
-  "bestTimeToVisit": "Month to Month",
-  "localCuisine": ["Dish 1", "Dish 2"],
-  "travelTips": ["Tip 1", "Tip 2"],
-  "nearbyAttractions": [
-    { "name": "Place", "distance": "10 km", "type": "Temple", "description": "Brief desc" }
-  ],
-  "itinerary": [
+  "destinations": [
     {
-      "day": 1,
-      "title": "Exploring the Heart of the Place",
-      "activities": [
-        { "time": "Morning", "activity": "Visit Landmark A", "description": "Beautiful sunrise view..." },
-        { "time": "Afternoon", "activity": "Lunch at Cafe B", "description": "Try local food..." }
-      ]
+      "id": "slug",
+      "name": "Name",
+      "description": "Short description (max 2 sentences)",
+      "distance": "XXX km",
+      "distanceValue": 150,
+      "travelMode": "${travelMode || 'car'}",
+      "travelTime": "X hours by ${travelMode || 'car'}",
+      "estimatedCost": {
+        "min": 3000,
+        "max": 5000,
+        "currency": "INR",
+        "breakdown": { "travel": 1000, "stay": 2000, "food": 1000, "activities": 500 }
+      },
+      "matchPercentage": 90,
+      "matchReasons": ["Reason 1", "Reason 2"],
+      "activities": ["Act 1", "Act 2"],
+      "experienceTags": ["Tag 1", "Tag 2"],
+      "bestTimeToVisit": "Months",
+      "highlights": ["H1", "H2"],
+      "nearbyAttractions": [{ "name": "Attraction", "distance": "X km", "type": "Type" }],
+      "imageQuery": "Search term",
+      "state": "State",
+      "country": "India"
     }
   ]
 }`;
 
-  try {
-    const response = await fetch(GROQ_API_URL, {
+    const response = await fetchWithBackoff(GROQ_API_URL, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${GROQ_API_KEY}`,
@@ -152,18 +91,82 @@ Return ONLY valid JSON with this structure:
         model: 'llama-3.3-70b-versatile',
         messages: [
           { role: 'system', content: systemPrompt },
-          { role: 'user', content: `Provide detailed travel information and day-by-day itinerary for: ${destinationName}. Trip duration: ${duration || '2-3 days'}. User is traveling from: ${userLocation}` }
+          { role: 'user', content: 'Provide recommendations.' }
         ],
-        temperature: 0.7,
-        max_tokens: 3500,
+        temperature: 0.6,
+        max_tokens: 1500,
+        response_format: { type: 'json_object' }
+      }),
+    });
+
+    const data = await response.json();
+    const content = data.choices[0]?.message?.content;
+    if (!content) throw new Error('Empty AI response');
+    
+    let parsed = JSON.parse(content);
+    if (!Array.isArray(parsed)) {
+      parsed = parsed.destinations || parsed.recommendations || Object.values(parsed)[0];
+    }
+    return Array.isArray(parsed) ? parsed : [];
+  });
+}
+
+export async function getDestinationDetails(destinationName, userLocation, duration) {
+  const cacheKey = `details-${destinationName}-${userLocation}-${duration}`;
+
+  return deduplicate(cacheKey, async () => {
+    const systemPrompt = `You are a travel guide. Provide details for: ${destinationName}. User starts at: ${userLocation}.
+
+If duration is >1 day, generate a day-by-day itinerary (keep descriptions very brief).
+
+Return ONLY JSON:
+{
+  "name": "${destinationName}",
+  "fullDescription": "Brief 2-3 sentence overview.",
+  "history": "Ultra-short history.",
+  "thingsToDo": [{ "name": "Activity", "description": "Brief desc", "duration": "X hr", "cost": "Cost" }],
+  "bestTimeToVisit": "Months",
+  "localCuisine": ["Dish 1", "Dish 2"],
+  "travelTips": ["Tip 1"],
+  "nearbyAttractions": [{ "name": "Place", "distance": "X km", "type": "Type", "description": "Brief desc" }],
+  "itinerary": [
+    {
+      "day": 1,
+      "title": "Day Title",
+      "activities": [{ "time": "Morning", "activity": "Activity", "description": "Brief desc" }]
+    }
+  ]
+}`;
+
+    let maxTokens = 350;
+    const durLower = (duration || '').toLowerCase();
+    if (durLower.includes('week') || durLower.includes('7')) {
+      maxTokens += 450;
+    } else if (durLower.includes('2') || durLower.includes('3') || durLower.includes('weekend')) {
+      maxTokens += 250;
+    } else {
+      maxTokens += 100;
+    }
+
+    const response = await fetchWithBackoff(GROQ_API_URL, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${GROQ_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'llama-3.3-70b-versatile',
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: `Details for ${destinationName}, duration: ${duration || '2-3 days'}` }
+        ],
+        temperature: 0.6,
+        max_tokens: maxTokens,
         response_format: { type: 'json_object' }
       }),
     });
 
     const data = await response.json();
     return JSON.parse(data.choices[0]?.message?.content || '{}');
-  } catch (error) {
-    console.error('Destination details error:', error);
-    throw error;
-  }
+  });
 }

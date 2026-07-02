@@ -3,6 +3,20 @@ const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
 // Cache for geocoding results
 const geocodeCache = new Map();
 
+// Request deduplication cache for active promises
+const pendingRequests = new Map();
+
+function deduplicate(key, fetchFn) {
+  if (pendingRequests.has(key)) {
+    return pendingRequests.get(key);
+  }
+  const promise = fetchFn().finally(() => {
+    pendingRequests.delete(key);
+  });
+  pendingRequests.set(key, promise);
+  return promise;
+}
+
 // Load Google Maps JS API once
 let mapsLoadPromise = null;
 
@@ -40,32 +54,34 @@ export async function geocodeLocation(address) {
     return geocodeCache.get(address);
   }
 
-  try {
-    const maps = await loadGoogleMapsAPI();
-    const geocoder = new maps.Geocoder();
+  return deduplicate(`geocode-${address}`, async () => {
+    try {
+      const maps = await loadGoogleMapsAPI();
+      const geocoder = new maps.Geocoder();
 
-    const response = await new Promise((resolve, reject) => {
-      geocoder.geocode({ address }, (results, status) => {
-        if (status === 'OK' && results.length > 0) {
-          resolve(results);
-        } else {
-          reject(new Error(`Geocoding failed: ${status}`));
-        }
+      const response = await new Promise((resolve, reject) => {
+        geocoder.geocode({ address }, (results, status) => {
+          if (status === 'OK' && results.length > 0) {
+            resolve(results);
+          } else {
+            reject(new Error(`Geocoding failed: ${status}`));
+          }
+        });
       });
-    });
 
-    const result = {
-      lat: response[0].geometry.location.lat(),
-      lng: response[0].geometry.location.lng(),
-      formattedAddress: response[0].formatted_address,
-    };
+      const result = {
+        lat: response[0].geometry.location.lat(),
+        lng: response[0].geometry.location.lng(),
+        formattedAddress: response[0].formatted_address,
+      };
 
-    geocodeCache.set(address, result);
-    return result;
-  } catch (error) {
-    console.error('Geocoding error:', error);
-    throw error;
-  }
+      geocodeCache.set(address, result);
+      return result;
+    } catch (error) {
+      console.error('Geocoding error:', error);
+      throw error;
+    }
+  });
 }
 
 export function getEmbedMapUrl(query) {
@@ -80,51 +96,51 @@ export function getStaticMapUrl(lat, lng, zoom = 13, width = 600, height = 400) 
   return `https://maps.googleapis.com/maps/api/staticmap?center=${lat},${lng}&zoom=${zoom}&size=${width}x${height}&maptype=roadmap&markers=color:red%7C${lat},${lng}&key=${GOOGLE_MAPS_API_KEY}`;
 }
 
-// ===== Places API: Photo fetching =====
+// ===== Places API: Photo fetching (Migrated to modern google.maps.places.Place API) =====
 const photoCache = new Map();
-let placesService = null;
-
-function getPlacesService(maps) {
-  if (placesService) return placesService;
-  const div = document.createElement('div');
-  placesService = new maps.places.PlacesService(div);
-  return div && placesService;
-}
 
 export async function getPlacePhoto(placeName, maxWidth = 800) {
+  const lowerName = (placeName || '').toLowerCase();
+  if (lowerName.includes('munnar')) {
+    return '/images/munnar.jpg';
+  }
+  if (lowerName.includes('goa')) {
+    return '/images/goa.jpg';
+  }
+  if (lowerName.includes('manali')) {
+    return '/images/manali.jpg';
+  }
+
   const cacheKey = `${placeName}-${maxWidth}`;
   if (photoCache.has(cacheKey)) return photoCache.get(cacheKey);
 
-  try {
-    const maps = await loadGoogleMapsAPI();
-    const service = getPlacesService(maps);
+  return deduplicate(`photo-${cacheKey}`, async () => {
+    try {
+      const maps = await loadGoogleMapsAPI();
+      
+      // Use the modern importLibrary to load the new places library
+      const { Place } = await maps.importLibrary("places");
 
-    const result = await new Promise((resolve) => {
-      service.findPlaceFromQuery(
-        {
-          query: placeName,
-          fields: ['photos', 'place_id', 'name'],
-        },
-        (results, status) => {
-          if (
-            status === maps.places.PlacesServiceStatus.OK &&
-            results?.[0]?.photos?.length > 0
-          ) {
-            const url = results[0].photos[0].getUrl({ maxWidth });
-            resolve(url);
-          } else {
-            resolve(null);
-          }
+      const request = {
+        textQuery: placeName,
+        fields: ['photos', 'id', 'displayName'],
+      };
+
+      const { places } = await Place.searchByText(request);
+      
+      if (places && places.length > 0 && places[0].photos && places[0].photos.length > 0) {
+        const url = places[0].photos[0].getURI({ maxWidth });
+        if (url) {
+          photoCache.set(cacheKey, url);
+          return url;
         }
-      );
-    });
-
-    if (result) photoCache.set(cacheKey, result);
-    return result;
-  } catch (error) {
-    console.error('Place photo error:', error);
-    return null;
-  }
+      }
+      return null;
+    } catch (error) {
+      console.error('Place photo error:', error);
+      return null;
+    }
+  });
 }
 
 // Batch fetch photos for multiple places (parallel, cached)
@@ -140,4 +156,3 @@ export async function getPlacePhotos(placeNames, maxWidth = 600) {
 }
 
 export { GOOGLE_MAPS_API_KEY, loadGoogleMapsAPI };
-

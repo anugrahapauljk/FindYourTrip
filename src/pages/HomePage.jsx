@@ -1,108 +1,156 @@
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { MapPin, IndianRupee, Compass, Sparkles, ArrowRight, Zap, Heart, Globe, ChevronRight, Mountain, Waves, Trees, Shield } from 'lucide-react';
 
+const travelSlides = [
+  'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=2000&q=80', // Mountains
+  'https://images.unsplash.com/photo-1432406186267-34a99e98e50b?auto=format&fit=crop&w=2000&q=80', // Waterfalls
+  'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=2000&q=80', // Beaches
+  'https://images.unsplash.com/photo-1593693397690-362cb9666fc2?auto=format&fit=crop&w=2000&q=80', // Tea plantations
+  'https://images.unsplash.com/photo-1448375240586-882707db888b?auto=format&fit=crop&w=2000&q=80', // Forests
+  'https://images.unsplash.com/photo-1501785888041-af3ef285b470?auto=format&fit=crop&w=2000&q=80', // Lakes
+  'https://images.unsplash.com/photo-1505118380757-91f5f5632de0?auto=format&fit=crop&w=2000&q=80'  // Coastal
+];
+
 const features = [
-  { icon: Sparkles, title: 'AI Recommendations', desc: 'Smart AI analyzes your preferences to find perfect destinations', color: 'from-purple-500 to-pink-500', glow: 'group-hover:shadow-purple-500/20' },
-  { icon: IndianRupee, title: 'Budget Based Planning', desc: 'Get recommendations that fit your budget perfectly', color: 'from-amber-500 to-orange-500', glow: 'group-hover:shadow-amber-500/20' },
-  { icon: MapPin, title: 'Distance Filtering', desc: 'Find amazing places within your preferred travel radius', color: 'from-emerald-500 to-cyan-500', glow: 'group-hover:shadow-emerald-500/20' },
-  { icon: Heart, title: 'Personalized Trips', desc: 'Save and revisit your favorite destinations anytime', color: 'from-rose-500 to-red-500', glow: 'group-hover:shadow-rose-500/20' },
+  { icon: Sparkles, title: 'AI Recommendations', desc: 'Smart AI analyzes your preferences to find perfect destinations.', color: 'from-cyan-400 to-sky-500', glow: 'group-hover:shadow-cyan-500/20' },
+  { icon: IndianRupee, title: 'Budget Based Planning', desc: 'Get recommendations that fit your budget perfectly.', color: 'from-amber-400 to-orange-500', glow: 'group-hover:shadow-amber-500/20' },
+  { icon: MapPin, title: 'Distance Filtering', desc: 'Find amazing places within your preferred travel radius.', color: 'from-emerald-400 to-teal-500', glow: 'group-hover:shadow-emerald-500/20' },
+  { icon: Heart, title: 'Personalized Trips', desc: 'Save and revisit your favorite destinations anytime.', color: 'from-rose-400 to-orange-500', glow: 'group-hover:shadow-rose-500/20' },
 ];
 
 const howItWorks = [
-  { step: '01', icon: MapPin, title: 'Choose Location', desc: 'Enter your starting point', accent: 'text-emerald-400', ring: 'ring-emerald-500/20' },
+  { step: '01', icon: MapPin, title: 'Choose Location', desc: 'Enter your starting point', accent: 'text-cyan-400', ring: 'ring-cyan-500/20' },
   { step: '02', icon: IndianRupee, title: 'Set Budget', desc: 'Define your spending limit', accent: 'text-amber-400', ring: 'ring-amber-500/20' },
-  { step: '03', icon: Compass, title: 'Select Experience', desc: 'Pick what excites you', accent: 'text-purple-400', ring: 'ring-purple-500/20' },
-  { step: '04', icon: Sparkles, title: 'AI Finds Trips', desc: 'Get personalized results', accent: 'text-cyan-400', ring: 'ring-cyan-500/20' },
+  { step: '03', icon: Compass, title: 'Select Experience', desc: 'Pick what excites you', accent: 'text-orange-400', ring: 'ring-orange-500/20' },
+  { step: '04', icon: Sparkles, title: 'AI Finds Trips', desc: 'Get personalized results', accent: 'text-sky-400', ring: 'ring-sky-500/20' },
 ];
 
 const popularDestinations = [
-  { name: 'Munnar', state: 'Kerala', tag: 'Nature', icon: Trees, gradient: 'from-emerald-600 to-teal-700', tagColor: 'bg-emerald-500/20 text-emerald-300' },
-  { name: 'Goa', state: 'Goa', tag: 'Beach', icon: Waves, gradient: 'from-cyan-600 to-blue-700', tagColor: 'bg-cyan-500/20 text-cyan-300' },
-  { name: 'Manali', state: 'Himachal Pradesh', tag: 'Adventure', icon: Mountain, gradient: 'from-indigo-600 to-purple-700', tagColor: 'bg-purple-500/20 text-purple-300' },
+  { 
+    name: 'Munnar', 
+    state: 'Kerala', 
+    tag: 'Nature', 
+    image: '/images/munnar.jpg', 
+    tagColor: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30' 
+  },
+  { 
+    name: 'Goa', 
+    state: 'Goa', 
+    tag: 'Beach', 
+    image: '/images/goa.jpg', 
+    tagColor: 'bg-cyan-500/20 text-cyan-300 border-cyan-500/30' 
+  },
+  { 
+    name: 'Manali', 
+    state: 'Himachal Pradesh', 
+    tag: 'Adventure', 
+    image: '/images/manali.jpg', 
+    tagColor: 'bg-orange-500/20 text-orange-300 border-orange-500/30' 
+  },
 ];
 
-
 export default function HomePage() {
+  const [currentSlide, setCurrentSlide] = useState(0);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentSlide((prev) => (prev + 1) % travelSlides.length);
+    }, 3000);
+    return () => clearInterval(timer);
+  }, []);
+
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen text-slate-100 font-sans selection:bg-cyan-500/30 selection:text-cyan-300 overflow-x-hidden">
+      
       {/* Hero Section */}
-      <section className="relative min-h-[92vh] flex items-center justify-center overflow-hidden">
-        {/* Animated background orbs */}
-        <div className="absolute inset-0">
-          <div className="absolute top-[15%] -left-10 w-80 h-80 bg-emerald-500/15 rounded-full blur-[100px] animate-float" />
-          <div className="absolute bottom-[15%] -right-10 w-96 h-96 bg-cyan-500/12 rounded-full blur-[100px] animate-float-delayed" />
-          <div className="absolute top-[40%] left-[30%] w-72 h-72 bg-purple-500/8 rounded-full blur-[120px] animate-float" style={{animationDelay: '3s'}} />
-          <div className="absolute top-[60%] right-[25%] w-64 h-64 bg-pink-500/6 rounded-full blur-[100px] animate-float-delayed" style={{animationDelay: '1s'}} />
-          {/* Grid pattern overlay */}
-          <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.015)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.015)_1px,transparent_1px)] bg-[size:72px_72px]" />
-          {/* Radial vignette */}
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_0%,rgba(2,6,23,0.4)_70%,rgba(2,6,23,0.8)_100%)]" />
+      <section className="relative min-h-screen flex items-center justify-center pt-20 overflow-hidden">
+        {/* Background Image Slideshow */}
+        <div className="absolute inset-0 z-0">
+          {travelSlides.map((slide, idx) => (
+            <img 
+              key={slide}
+              src={slide} 
+              alt="Travel background" 
+              className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 scale-105 ${
+                idx === currentSlide ? 'opacity-100 animate-zoom-slow' : 'opacity-0'
+              }`}
+            />
+          ))}
+          {/* Gradients and vignette */}
+          <div className="absolute inset-0 bg-slate-950/50" />
+          <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/20 to-transparent" />
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_20%,rgba(5,12,36,0.85)_100%)]" />
+          
+          {/* Animated Background Particles */}
+          <div className="absolute top-[20%] left-[10%] w-72 h-72 bg-sky-500/10 rounded-full blur-[100px] animate-float" />
+          <div className="absolute bottom-[20%] right-[10%] w-96 h-96 bg-orange-500/10 rounded-full blur-[120px] animate-float-delayed" />
         </div>
 
-        <div className="relative z-10 max-w-5xl mx-auto px-4 text-center">
-
-
-          <h1 className="text-5xl sm:text-6xl lg:text-7xl font-extrabold text-white mb-7 leading-[1.1] tracking-tight animate-fadeInUp">
-            Discover Places That
-            <br />
-            <span className="bg-gradient-to-r from-emerald-400 via-cyan-400 to-purple-400 bg-clip-text text-transparent">
-              Match Your Vibe
-            </span>
+        {/* Hero Content */}
+        <div className="relative z-10 max-w-5xl mx-auto px-6 text-center mt-8">
+          <h1 className="text-6xl sm:text-7xl lg:text-8xl font-black text-white mb-6 leading-[1.05] tracking-tight uppercase">
+            Get <span className="bg-gradient-to-r from-sky-400 via-cyan-300 to-orange-400 bg-clip-text text-transparent">away</span>
           </h1>
 
-          <p className="text-lg sm:text-xl text-slate-400/90 mb-12 max-w-2xl mx-auto leading-relaxed animate-fadeInUp" style={{animationDelay: '0.2s'}}>
-            Tell us where you are, your budget, and what excites you — our AI curates the perfect destinations in seconds.
+          <p className="text-xl sm:text-2xl text-slate-200 mb-12 max-w-2xl mx-auto font-light leading-relaxed">
+            AI-Powered trips, tailored <span className="bg-gradient-to-r from-cyan-300 to-orange-300 bg-clip-text text-transparent font-medium">just for you</span>.
           </p>
 
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-fadeInUp" style={{animationDelay: '0.4s'}}>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link
               to="/plan"
-              className="group relative flex items-center gap-2.5 px-9 py-4.5 rounded-2xl bg-gradient-to-r from-emerald-500 to-cyan-500 text-white font-semibold text-lg shadow-2xl shadow-emerald-500/25 hover:shadow-emerald-500/50 transition-all duration-300 hover:-translate-y-1 overflow-hidden"
+              className="group relative flex items-center gap-2.5 px-10 py-5 rounded-2xl bg-gradient-to-r from-sky-400 via-cyan-400 to-orange-400 text-slate-950 font-bold text-lg shadow-2xl shadow-sky-500/25 hover:shadow-orange-500/30 transition-all duration-300 hover:-translate-y-1 overflow-hidden"
             >
-              {/* Shimmer effect */}
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
               <span className="relative">Start Planning My Trip</span>
               <ArrowRight className="relative w-5 h-5 group-hover:translate-x-1 transition-transform" />
             </Link>
             <a
               href="#how-it-works"
-              className="flex items-center gap-2 px-9 py-4.5 rounded-2xl bg-white/[0.04] backdrop-blur-xl border border-white/[0.08] text-slate-300 font-medium hover:bg-white/[0.08] hover:border-white/[0.15] transition-all duration-300"
+              className="flex items-center gap-2 px-10 py-5 rounded-2xl bg-white/[0.04] backdrop-blur-md border border-white/[0.08] text-slate-200 font-semibold hover:bg-white/[0.08] hover:border-white/[0.15] transition-all duration-300"
             >
               How It Works
             </a>
           </div>
 
-          {/* Stats — glassmorphism cards */}
-          <div className="flex items-center justify-center gap-6 sm:gap-10 mt-20 animate-fadeInUp" style={{animationDelay: '0.6s'}}>
+          {/* Stats Bar */}
+          <div className="flex items-center justify-center gap-8 sm:gap-16 mt-24">
             {[
-              { value: 'AI', label: 'Powered', icon: Sparkles },
-              { value: '500+', label: 'Destinations', icon: Globe },
-              { value: '100%', label: 'Personalized', icon: Heart },
-            ].map((stat) => {
-              const Icon = stat.icon;
-              return (
-                <div key={stat.label} className="relative group">
-                  <div className="text-center px-6 py-4 rounded-2xl bg-white/[0.03] backdrop-blur-sm border border-white/[0.06] group-hover:border-white/[0.12] group-hover:bg-white/[0.06] transition-all duration-300">
-                    <Icon className="w-4 h-4 text-emerald-400/60 mx-auto mb-2" />
-                    <div className="text-xl font-bold bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent">{stat.value}</div>
-                    <div className="text-[11px] text-slate-500 mt-0.5 uppercase tracking-wider">{stat.label}</div>
-                  </div>
+              { value: 'AI', label: 'POWERED' },
+              { value: '500+', label: 'DESTINATIONS' },
+              { value: '100%', label: 'PERSONALIZED' },
+            ].map((stat) => (
+              <div key={stat.label} className="text-center group">
+                <div className="text-3xl font-extrabold bg-gradient-to-r from-sky-400 to-orange-400 bg-clip-text text-transparent transform group-hover:scale-105 transition-transform duration-300">
+                  {stat.value}
                 </div>
-              );
-            })}
+                <div className="text-[10px] text-slate-400 font-bold tracking-widest mt-1.5 uppercase">
+                  {stat.label}
+                </div>
+              </div>
+            ))}
           </div>
         </div>
 
+        {/* Scroll Indicator */}
+        <div className="absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 cursor-pointer opacity-70 hover:opacity-100 transition-opacity">
+          <span className="text-[10px] tracking-widest text-slate-400 uppercase font-bold">Scroll</span>
+          <div className="w-6 h-10 rounded-full border-2 border-white/20 flex justify-center pt-2 backdrop-blur-sm">
+            <div className="w-1 h-2 rounded-full bg-cyan-400 animate-scroll" />
+          </div>
+        </div>
       </section>
 
       {/* How It Works */}
-      <section id="how-it-works" className="py-28 px-4 relative">
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-emerald-500/[0.02] to-transparent" />
+      <section id="how-it-works" className="py-18 px-6 relative bg-slate-900/10">
         <div className="max-w-6xl mx-auto relative">
-          <div className="text-center mb-16">
-            <span className="inline-block px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-medium tracking-wider uppercase mb-4">Simple Process</span>
-            <h2 className="text-3xl sm:text-5xl font-bold text-white mb-4">How It Works</h2>
-            <p className="text-slate-400 max-w-lg mx-auto">Four simple steps to your perfect trip</p>
+          <div className="text-center mb-20">
+            <span className="inline-block px-4 py-1.5 rounded-full bg-sky-500/10 border border-sky-500/20 text-sky-400 text-xs font-semibold tracking-widest uppercase mb-4">
+              SIMPLE PROCESS
+            </span>
+            <h2 className="text-4xl sm:text-5xl font-black text-white tracking-tight">How It Works</h2>
+            <p className="text-slate-350 mt-3 max-w-lg mx-auto">Four simple steps to generate your perfect itinerary</p>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -110,24 +158,21 @@ export default function HomePage() {
               const Icon = item.icon;
               return (
                 <div key={i} className="relative group">
-                  {/* Connector line */}
                   {i < howItWorks.length - 1 && (
                     <div className="hidden lg:block absolute top-12 left-[60%] w-[80%] h-px">
                       <div className="w-full h-full bg-gradient-to-r from-white/10 to-transparent" />
-                      <div className="absolute right-0 top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-white/20" />
                     </div>
                   )}
                   {/* Glass card */}
-                  <div className="relative bg-white/[0.03] backdrop-blur-xl border border-white/[0.06] rounded-2xl p-7 hover:border-white/[0.15] hover:bg-white/[0.06] transition-all duration-500 hover:-translate-y-2 hover:shadow-xl hover:shadow-emerald-500/5 overflow-hidden">
-                    {/* Glow on hover */}
-                    <div className="absolute -top-12 -right-12 w-24 h-24 rounded-full bg-emerald-500/0 group-hover:bg-emerald-500/10 blur-2xl transition-all duration-500" />
+                  <div className="relative h-full bg-white/[0.03] backdrop-blur-xl border border-white/[0.06] rounded-3xl p-8 hover:border-cyan-500/30 hover:bg-white/[0.05] transition-all duration-500 hover:-translate-y-2 hover:shadow-2xl hover:shadow-sky-500/5">
+                    <div className="absolute -top-12 -right-12 w-24 h-24 rounded-full bg-cyan-500/0 group-hover:bg-cyan-500/5 blur-2xl transition-all duration-500" />
                     <div className="relative">
-                      <div className="text-[10px] font-mono text-emerald-500/40 mb-3 tracking-widest">{item.step}</div>
-                      <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br from-white/[0.06] to-white/[0.02] border border-white/[0.08] flex items-center justify-center mb-5 ring-1 ${item.ring} group-hover:scale-110 transition-transform duration-300`}>
+                      <div className="text-xs font-mono text-cyan-500/30 mb-4 tracking-widest font-bold">{item.step}</div>
+                      <div className={`w-14 h-14 rounded-2xl bg-white/[0.04] border border-white/[0.08] flex items-center justify-center mb-6 ring-1 ${item.ring} group-hover:scale-105 transition-transform duration-300`}>
                         <Icon className={`w-6 h-6 ${item.accent}`} />
                       </div>
-                      <h3 className="text-white font-semibold text-lg mb-1.5">{item.title}</h3>
-                      <p className="text-sm text-slate-400/80">{item.desc}</p>
+                      <h3 className="text-white font-bold text-lg mb-2">{item.title}</h3>
+                      <p className="text-sm text-slate-350 leading-relaxed">{item.desc}</p>
                     </div>
                   </div>
                 </div>
@@ -138,39 +183,45 @@ export default function HomePage() {
       </section>
 
       {/* Popular Destinations */}
-      <section className="py-28 px-4 relative">
-        <div className="absolute inset-0 bg-gradient-to-b from-slate-950 via-slate-900/40 to-slate-950" />
+      <section className="py-18 px-6 relative bg-slate-900/20">
         <div className="max-w-6xl mx-auto relative">
-          <div className="flex items-end justify-between mb-14">
+          <div className="flex flex-col md:flex-row md:items-end justify-between mb-16 gap-4">
             <div>
-              <span className="inline-block px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 text-xs font-medium tracking-wider uppercase mb-4">Trending</span>
-              <h2 className="text-3xl sm:text-5xl font-bold text-white mb-2">Popular Destinations</h2>
-              <p className="text-slate-400/80">Trending places loved by travelers</p>
+              <span className="inline-block px-4 py-1.5 rounded-full bg-orange-500/10 border border-orange-500/20 text-orange-400 text-xs font-semibold tracking-widest uppercase mb-4">
+                TRENDING NOW
+              </span>
+              <h2 className="text-4xl sm:text-5xl font-black text-white tracking-tight">Popular Destinations</h2>
+              <p className="text-slate-350 mt-2">Beautiful locations handpicked by travelers and AI</p>
             </div>
-            <Link to="/plan" className="hidden sm:flex items-center gap-1 text-emerald-400 text-sm font-medium hover:text-emerald-300 transition-colors group">
-              Explore all <ChevronRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+            <Link to="/plan" className="inline-flex items-center gap-1.5 text-cyan-400 text-sm font-bold hover:text-cyan-300 transition-colors group">
+              Explore all destinations <ChevronRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
             </Link>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
             {popularDestinations.map((dest, i) => {
-              const Icon = dest.icon;
               return (
                 <Link
                   key={i}
                   to="/plan"
-                  className="group relative overflow-hidden rounded-3xl border border-white/[0.06] hover:border-white/[0.15] transition-all duration-500 hover:-translate-y-2 hover:shadow-2xl hover:shadow-black/30"
+                  className="group relative overflow-hidden rounded-[24px] border border-white/[0.06] hover:border-cyan-500/25 transition-all duration-500 hover:-translate-y-2 hover:shadow-2xl hover:shadow-cyan-500/5 bg-slate-900/20"
                 >
-                  <div className={`aspect-[4/3] bg-gradient-to-br ${dest.gradient} flex items-center justify-center relative`}>
-                    <Icon className="w-24 h-24 text-white/10 group-hover:text-white/15 group-hover:scale-110 transition-all duration-500" />
-                    {/* Glass overlay */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/30 to-transparent" />
-                    {/* Shine effect */}
-                    <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                  <div className="aspect-[4/3] w-full overflow-hidden relative">
+                    <img 
+                      src={dest.image} 
+                      alt={dest.name} 
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" 
+                      loading="lazy"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/20 to-transparent" />
                     <div className="absolute bottom-0 left-0 right-0 p-6">
-                      <span className={`inline-block px-3 py-1 rounded-full backdrop-blur-sm ${dest.tagColor} text-xs font-medium mb-2 border border-white/10`}>{dest.tag}</span>
-                      <h3 className="text-2xl font-bold text-white">{dest.name}</h3>
-                      <p className="text-sm text-white/50">{dest.state}</p>
+                      <span className={`inline-block px-3 py-1 rounded-full backdrop-blur-md border ${dest.tagColor} text-xs font-bold mb-2.5`}>
+                        {dest.tag}
+                      </span>
+                      <h3 className="text-2xl font-black text-white uppercase tracking-tight">{dest.name}</h3>
+                      <p className="text-sm text-slate-200 flex items-center gap-1 mt-1 font-medium">
+                        <MapPin className="w-3.5 h-3.5 text-orange-400" /> {dest.state}, India
+                      </p>
                     </div>
                   </div>
                 </Link>
@@ -180,29 +231,31 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Features */}
-      <section className="py-28 px-4 relative">
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-purple-500/[0.015] to-transparent" />
+      {/* Features / Why Choose Us */}
+      <section className="py-18 px-6 relative bg-slate-900/10">
         <div className="max-w-6xl mx-auto relative">
-          <div className="text-center mb-16">
-            <span className="inline-block px-3 py-1 rounded-full bg-purple-500/10 border border-purple-500/20 text-purple-400 text-xs font-medium tracking-wider uppercase mb-4">Features</span>
-            <h2 className="text-3xl sm:text-5xl font-bold text-white mb-4">Why FindYourTrip?</h2>
-            <p className="text-slate-400/80 max-w-lg mx-auto">Smart features that make trip planning effortless</p>
+          <div className="text-center mb-20">
+            <span className="inline-block px-4 py-1.5 rounded-full bg-orange-500/10 border border-orange-500/20 text-orange-400 text-xs font-semibold tracking-widest uppercase mb-4">
+              WHY FINDYOURTRIP
+            </span>
+            <h2 className="text-4xl sm:text-5xl font-black text-white tracking-tight">Smart Travel Planning</h2>
+            <p className="text-slate-350 mt-3 max-w-lg mx-auto">Travel intelligence designed to make recommendations clean and effortless</p>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             {features.map((feat, i) => {
               const Icon = feat.icon;
               return (
-                <div key={i} className={`group relative bg-white/[0.03] backdrop-blur-xl border border-white/[0.06] rounded-2xl p-7 hover:border-white/[0.12] hover:bg-white/[0.05] transition-all duration-500 hover:-translate-y-1 hover:shadow-xl ${feat.glow} overflow-hidden`}>
-                  {/* Background glow */}
+                <div key={i} className={`group relative bg-white/[0.03] backdrop-blur-xl border border-white/[0.06] rounded-3xl p-8 hover:border-cyan-500/30 hover:bg-white/[0.05] transition-all duration-500 hover:-translate-y-1 hover:shadow-2xl ${feat.glow} overflow-hidden`}>
                   <div className="absolute -top-10 -right-10 w-32 h-32 rounded-full opacity-0 group-hover:opacity-100 blur-3xl transition-opacity duration-500" style={{background: `radial-gradient(circle, ${feat.color.includes('purple') ? 'rgba(168,85,247,0.08)' : feat.color.includes('amber') ? 'rgba(245,158,11,0.08)' : feat.color.includes('emerald') ? 'rgba(52,211,153,0.08)' : 'rgba(244,63,94,0.08)'}, transparent)`}} />
-                  <div className="relative">
-                    <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${feat.color} flex items-center justify-center mb-5 group-hover:scale-110 transition-transform duration-300 shadow-lg`}>
-                      <Icon className="w-6 h-6 text-white" />
+                  <div className="relative flex flex-col sm:flex-row items-start gap-6">
+                    <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${feat.color} flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform duration-300 shadow-lg`}>
+                      <Icon className="w-6 h-6 text-slate-950 font-bold" />
                     </div>
-                    <h3 className="text-lg font-semibold text-white mb-2">{feat.title}</h3>
-                    <p className="text-sm text-slate-400/80 leading-relaxed">{feat.desc}</p>
+                    <div>
+                      <h3 className="text-xl font-bold text-white mb-2">{feat.title}</h3>
+                      <p className="text-sm text-slate-350 leading-relaxed">{feat.desc}</p>
+                    </div>
                   </div>
                 </div>
               );
@@ -211,30 +264,24 @@ export default function HomePage() {
         </div>
       </section>
 
-
-      {/* CTA */}
-      <section className="py-28 px-4">
+      {/* Call To Action */}
+      <section className="py-18 px-6 relative bg-slate-900/20">
         <div className="max-w-4xl mx-auto">
-          <div className="relative rounded-[2rem] overflow-hidden">
-            {/* Glass background */}
-            <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/[0.08] via-cyan-500/[0.06] to-purple-500/[0.08]" />
+          <div className="relative rounded-[2.5rem] overflow-hidden border border-white/[0.05] bg-gradient-to-br from-sky-500/[0.08] via-cyan-500/[0.04] to-orange-500/[0.08]">
             <div className="absolute inset-0 backdrop-blur-3xl" />
-            <div className="absolute inset-[1px] rounded-[2rem] border border-white/[0.08]" />
-            {/* Glow effects */}
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-80 h-40 bg-emerald-500/10 rounded-full blur-[80px]" />
-            <div className="absolute bottom-0 right-1/4 w-60 h-40 bg-purple-500/8 rounded-full blur-[80px]" />
-
-            <div className="relative z-10 px-8 py-16 sm:px-16 sm:py-20 text-center">
-              <div className="w-16 h-16 rounded-2xl bg-white/[0.06] backdrop-blur-sm border border-white/[0.1] flex items-center justify-center mx-auto mb-8">
-                <Globe className="w-8 h-8 text-emerald-400" />
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-80 h-40 bg-sky-500/10 rounded-full blur-[80px]" />
+            
+            <div className="relative z-10 px-8 py-20 text-center">
+              <div className="w-16 h-16 rounded-2xl bg-white/[0.03] border border-white/[0.08] flex items-center justify-center mx-auto mb-8">
+                <Globe className="w-8 h-8 text-sky-400" />
               </div>
-              <h2 className="text-3xl sm:text-5xl font-bold text-white mb-5">Ready to Find Your<br />Perfect Trip?</h2>
-              <p className="text-slate-400/80 mb-10 max-w-lg mx-auto leading-relaxed">Let our AI analyze hundreds of destinations and find the ones that match your style, budget, and interests.</p>
+              <h2 className="text-3xl sm:text-5xl font-black text-white mb-6 uppercase tracking-tight leading-tight">Ready to Find Your<br />Next Getaway?</h2>
+              <p className="text-slate-350 mb-10 max-w-lg mx-auto leading-relaxed">Plan tailored routes matching your budget, experiences, and preferred travel times in seconds.</p>
               <Link
                 to="/plan"
-                className="group relative inline-flex items-center gap-2.5 px-10 py-5 rounded-2xl bg-gradient-to-r from-emerald-500 to-cyan-500 text-white font-semibold text-lg shadow-2xl shadow-emerald-500/25 hover:shadow-emerald-500/50 transition-all duration-300 hover:-translate-y-1 overflow-hidden"
+                className="group relative inline-flex items-center gap-2.5 px-10 py-5 rounded-2xl bg-gradient-to-r from-sky-400 via-cyan-400 to-orange-400 text-slate-950 font-extrabold text-lg shadow-2xl shadow-sky-500/20 hover:shadow-orange-500/40 transition-all duration-300 hover:-translate-y-1 overflow-hidden"
               >
-                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
                 <span className="relative">Get Started — It's Free</span>
                 <ArrowRight className="relative w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </Link>
@@ -244,18 +291,18 @@ export default function HomePage() {
       </section>
 
       {/* Footer */}
-      <footer className="py-10 px-4 border-t border-white/[0.04]">
-        <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+      <footer className="py-12 px-6 border-t border-white/[0.04]">
+        <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-6">
           <div className="flex items-center gap-2.5">
-            <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-emerald-400 to-cyan-400 flex items-center justify-center">
-              <Compass className="w-4 h-4 text-slate-900" />
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-sky-400 to-orange-400 flex items-center justify-center">
+              <Compass className="w-4.5 h-4.5 text-slate-950 font-black animate-spin-slow" />
             </div>
-            <span className="text-sm font-semibold text-slate-400">FindYourTrip</span>
+            <span className="text-base font-bold text-slate-300 tracking-tight">FindYourTrip</span>
           </div>
-          <div className="flex items-center gap-6 text-xs text-slate-600">
+          <div className="flex flex-wrap items-center justify-center gap-6 text-xs text-slate-500">
             <span>© 2026 FindYourTrip</span>
-            <span className="flex items-center gap-1"><Shield className="w-3 h-3" /> Privacy-First</span>
-            <span className="flex items-center gap-1"><Zap className="w-3 h-3" /> AI-Powered</span>
+            <span className="flex items-center gap-1"><Shield className="w-3.5 h-3.5" /> Privacy First</span>
+            <span className="flex items-center gap-1"><Zap className="w-3.5 h-3.5" /> AI Engine</span>
           </div>
         </div>
       </footer>
