@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { ArrowLeft, MapPin, Clock, IndianRupee, Heart, CheckCircle2, Star, Navigation, Loader2, Utensils, Lightbulb, Calendar, Map as MapIcon } from 'lucide-react';
+import { ArrowLeft, MapPin, Clock, IndianRupee, Heart, CheckCircle2, Star, Navigation, Loader2, Utensils, Lightbulb, Calendar, Map as MapIcon, X, Download } from 'lucide-react';
 import ExperienceTag from '../components/ExperienceTag';
 import MapView from '../components/MapView';
 import { useAuth } from '../contexts/AuthContext';
 import { saveTrip } from '../services/firebaseService';
 import { getDestinationDetails } from '../services/groqService';
 import { getPlacePhoto } from '../services/mapsService';
+import { exportElementToPDF } from '../utils/pdfExport';
 
 export default function DestinationDetailPage() {
   const location = useLocation();
@@ -18,6 +19,7 @@ export default function DestinationDetailPage() {
   const [loadingDetails, setLoadingDetails] = useState(true);
   const [saved, setSaved] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState(null);
   const [heroPhoto, setHeroPhoto] = useState(null);
 
   useEffect(() => {
@@ -29,6 +31,7 @@ export default function DestinationDetailPage() {
         setDetails(data);
       } catch (err) {
         console.error('Failed to load details:', err);
+        setError('Failed to load destination details.');
       } finally {
         setLoadingDetails(false);
       }
@@ -69,8 +72,23 @@ export default function DestinationDetailPage() {
       setSaved(true);
     } catch (err) {
       console.error('Save error:', err);
+      setError('Failed to save trip.');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const [exporting, setExporting] = useState(false);
+  const handleExportPDF = async () => {
+    setExporting(true);
+    try {
+      const element = document.getElementById('itinerary-content');
+      await exportElementToPDF(element, `${destination.name}-Trip-Plan.pdf`);
+    } catch (err) {
+      console.error('PDF export failed:', err);
+      setError('Failed to generate PDF. Please try again.');
+    } finally {
+      setExporting(false);
     }
   };
 
@@ -128,7 +146,13 @@ export default function DestinationDetailPage() {
         </div>
       </div>
 
-      <div className="max-w-5xl mx-auto px-4 mt-8">
+      <div id="itinerary-content" className="max-w-5xl mx-auto px-4 mt-8">
+        {error && (
+          <div className="mb-6 px-4 py-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm flex justify-between items-center">
+            <span>{error}</span>
+            <button onClick={() => setError(null)} className="text-red-400 hover:text-red-300"><X className="w-4 h-4" /></button>
+          </div>
+        )}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Main content */}
           <div className="lg:col-span-2 space-y-6">
@@ -330,19 +354,61 @@ export default function DestinationDetailPage() {
               </div>
 
               {/* Cost breakdown */}
-              {destination.estimatedCost?.breakdown && (
-                <div className="mt-5 pt-5 border-t border-white/5">
-                  <h4 className="text-xs font-semibold text-slate-400 mb-3 uppercase tracking-wider">Cost Breakdown</h4>
-                  <div className="space-y-2">
-                    {Object.entries(destination.estimatedCost.breakdown).map(([key, val]) => (
-                      <div key={key} className="flex items-center justify-between">
-                        <span className="text-xs text-slate-500 capitalize">{key}</span>
-                        <span className="text-xs text-slate-300 font-medium">₹{val?.toLocaleString()}</span>
+              {destination.estimatedCost?.breakdown && (() => {
+                const modeEmojis = {
+                  car: '🚗',
+                  bike: '🏍',
+                  bus: '🚌',
+                  train: '🚆',
+                  flight: '✈'
+                };
+                const labels = {
+                  car: 'Car',
+                  bike: 'Bike',
+                  bus: 'Bus',
+                  train: 'Train',
+                  flight: 'Flight'
+                };
+                const travelModeKey = destination.travelMode || 'car';
+                const emoji = modeEmojis[travelModeKey] || '🚗';
+                const label = labels[travelModeKey] || 'Car';
+                
+                return (
+                  <div className="mt-5 pt-5 border-t border-white/5 space-y-3">
+                    <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Budget Breakdown</h4>
+                    <div className="space-y-2.5">
+                      <div className="flex items-center justify-between text-xs sm:text-sm">
+                        <span className="text-slate-500 flex items-center gap-1.5">
+                          <span>{emoji}</span> Transport ({label})
+                        </span>
+                        <span className="text-slate-350 font-medium">₹{(destination.estimatedCost.breakdown.travel || 0).toLocaleString()}</span>
                       </div>
-                    ))}
+                      <div className="flex items-center justify-between text-xs sm:text-sm">
+                        <span className="text-slate-500 flex items-center gap-1.5">
+                          <span>🏨</span> Stay
+                        </span>
+                        <span className="text-slate-350 font-medium">₹{(destination.estimatedCost.breakdown.stay || 0).toLocaleString()}</span>
+                      </div>
+                      <div className="flex items-center justify-between text-xs sm:text-sm">
+                        <span className="text-slate-500 flex items-center gap-1.5">
+                          <span>🍽</span> Food
+                        </span>
+                        <span className="text-slate-350 font-medium">₹{(destination.estimatedCost.breakdown.food || 0).toLocaleString()}</span>
+                      </div>
+                      <div className="flex items-center justify-between text-xs sm:text-sm">
+                        <span className="text-slate-500 flex items-center gap-1.5">
+                          <span>🎟</span> Activities
+                        </span>
+                        <span className="text-slate-350 font-medium">₹{(destination.estimatedCost.breakdown.activities || 0).toLocaleString()}</span>
+                      </div>
+                      <div className="border-t border-white/10 pt-2.5 mt-2.5 flex items-center justify-between text-xs sm:text-sm font-bold text-white">
+                        <span>Total Budget</span>
+                        <span>₹{destination.estimatedCost?.min?.toLocaleString()} - ₹{destination.estimatedCost?.max?.toLocaleString()}</span>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              )}
+                );
+              })()}
 
               {/* Travel tips */}
               {details?.travelTips && details.travelTips.length > 0 && (
@@ -377,6 +443,19 @@ export default function DestinationDetailPage() {
                   <><CheckCircle2 className="w-4 h-4" /> Trip Saved!</>
                 ) : (
                   <><Heart className="w-4 h-4" /> Save Trip ❤️</>
+                )}
+              </button>
+
+              {/* Export button */}
+              <button
+                onClick={handleExportPDF}
+                disabled={exporting}
+                className="w-full mt-3 py-3 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 transition-all duration-300 bg-white/5 border border-white/10 hover:bg-white/10 text-slate-300 hover:text-white"
+              >
+                {exporting ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <><Download className="w-4 h-4" /> Export as PDF</>
                 )}
               </button>
             </div>

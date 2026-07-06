@@ -2,6 +2,7 @@ import { lazy, Suspense } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import ProtectedRoute from './components/ProtectedRoute';
+import ErrorBoundary from './components/ErrorBoundary';
 import { Loader2 } from 'lucide-react';
 
 // Lazy load pages for code splitting
@@ -11,6 +12,7 @@ const RecommendationsPage = lazy(() => import('./pages/RecommendationsPage'));
 const DestinationDetailPage = lazy(() => import('./pages/DestinationDetailPage'));
 const DashboardPage = lazy(() => import('./pages/DashboardPage'));
 const SharedTripPage = lazy(() => import('./pages/SharedTripPage'));
+const NotFoundPage = lazy(() => import('./pages/NotFoundPage'));
 
 const PageLoader = () => (
   <div className="min-h-screen bg-slate-950 flex items-center justify-center">
@@ -23,22 +25,25 @@ const PageLoader = () => (
 
 export default function App() {
   return (
-    <div className="min-h-screen bg-slate-950 text-white">
-      <Navbar />
-      <Suspense fallback={<PageLoader />}>
-        <Routes>
-          <Route path="/" element={<HomePage />} />
-          <Route path="/plan" element={<PlanTripPage />} />
-          <Route path="/recommendations" element={<RecommendationsPage />} />
-          <Route path="/destination/:id" element={<DestinationDetailPage />} />
-          <Route path="/shared/:shareId" element={<SharedTripPage />} />
-          <Route path="/dashboard" element={
-            <ProtectedRoute>
-              <DashboardPage />
-            </ProtectedRoute>
-          } />
-        </Routes>
-      </Suspense>
-    </div>
+    <ErrorBoundary>
+      <div className="min-h-screen bg-slate-950 text-white">
+        <Navbar />
+        <Suspense fallback={<PageLoader />}>
+          <Routes>
+            <Route path="/" element={<HomePage />} />
+            <Route path="/plan" element={<PlanTripPage />} />
+            <Route path="/recommendations" element={<RecommendationsPage />} />
+            <Route path="/destination/:id" element={<DestinationDetailPage />} />
+            <Route path="/shared/:shareId" element={<SharedTripPage />} />
+            <Route path="/dashboard" element={
+              <ProtectedRoute>
+                <DashboardPage />
+              </ProtectedRoute>
+            } />
+            <Route path="*" element={<NotFoundPage />} />
+          </Routes>
+        </Suspense>
+      </div>
+    </ErrorBoundary>
   );
 }

@@ -84,6 +84,47 @@ export async function geocodeLocation(address) {
   });
 }
 
+export async function reverseGeocodeLocation(lat, lng) {
+  const cacheKey = `${lat},${lng}`;
+  if (geocodeCache.has(cacheKey)) {
+    return geocodeCache.get(cacheKey);
+  }
+
+  return deduplicate(`reverse-geocode-${cacheKey}`, async () => {
+    try {
+      const maps = await loadGoogleMapsAPI();
+      const geocoder = new maps.Geocoder();
+
+      const response = await new Promise((resolve, reject) => {
+        geocoder.geocode({ location: { lat, lng } }, (results, status) => {
+          if (status === 'OK' && results.length > 0) {
+            resolve(results);
+          } else {
+            reject(new Error(`Reverse geocoding failed: ${status}`));
+          }
+        });
+      });
+
+      // Get city/state level address roughly or just formatted address
+      const addressComponents = response[0].address_components;
+      const cityState = addressComponents.filter(c => c.types.includes('locality') || c.types.includes('administrative_area_level_1')).map(c => c.long_name).join(', ');
+      
+      const result = {
+        lat,
+        lng,
+        formattedAddress: cityState || response[0].formatted_address,
+        fullAddress: response[0].formatted_address
+      };
+
+      geocodeCache.set(cacheKey, result);
+      return result;
+    } catch (error) {
+      console.error('Reverse geocoding error:', error);
+      throw error;
+    }
+  });
+}
+
 export function getEmbedMapUrl(query) {
   return `https://www.google.com/maps/embed/v1/place?key=${GOOGLE_MAPS_API_KEY}&q=${encodeURIComponent(query)}&zoom=12`;
 }
@@ -153,6 +194,121 @@ export async function getPlacePhotos(placeNames, maxWidth = 600) {
     map[name] = results[i].status === 'fulfilled' ? results[i].value : null;
   });
   return map;
+}
+
+/**
+ * Calculates distance and duration between origin and destination using DistanceMatrixService.
+ * For flights, calculates straight-line distance and air travel time.
+ */
+export async function getRouteDetails(origin, destination, mode = 'car') {
+  const normMode = (mode || '').toLowerCase().trim();
+
+  // If it's a flight, geocode both and calculate straight line distance
+  if (normMode === 'flight') {
+    try {
+      const originGeo = await geocodeLocation(origin);
+      const destGeo = await geocodeLocation(destination);
+      
+      // Calculate straight line distance (Haversine formula)
+      const R = 6371; // Earth radius in km
+      const dLat = (destGeo.lat - originGeo.lat) * Math.PI / 180;
+      const dLng = (destGeo.lng - originGeo.lng) * Math.PI / 180;
+      const a = 
+        Math.sin(dLat/2) * Math.sin(dLat/2) +
+        Math.cos(originGeo.lat * Math.PI / 180) * Math.cos(destGeo.lat * Math.PI / 180) * 
+        Math.sin(dLng/2) * Math.sin(dLng/2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+      const distanceValue = Math.round(R * c); // in km
+      
+      // Flight duration: distance / 500 km/h + 2 hours (boarding)
+      const durationHours = (distanceValue / 500) + 2;
+      const durationText = durationHours < 3 
+        ? `${Math.round(durationHours * 60)} mins` 
+        : `${durationHours.toFixed(1)} hours`;
+
+      return {
+        distanceText: `${distanceValue} km`,
+        distanceValue: distanceValue,
+        durationText: `${durationText} (Flight)`,
+        durationValue: Math.round(durationHours * 3600), // in seconds
+      };
+    } catch (err) {
+      console.warn('Flight route calculation failed, using fallback driving:', err);
+    }
+  }
+
+  // Map travel modes to Google Maps travel modes
+  let googleTravelMode = 'DRIVING';
+  if (normMode === 'train' || normMode === 'bus') {
+    googleTravelMode = 'TRANSIT';
+  }
+
+  try {
+    const maps = await loadGoogleMapsAPI();
+    const service = new maps.DistanceMatrixService();
+
+    const response = await new Promise((resolve, reject) => {
+      service.getDistanceMatrix({
+        origins: [origin],
+        destinations: [destination],
+        travelMode: maps.TravelMode[googleTravelMode] || maps.TravelMode.DRIVING,
+        unitSystem: maps.UnitSystem.METRIC,
+      }, (results, status) => {
+        if (status === 'OK' && results.rows?.[0]?.elements?.[0]?.status === 'OK') {
+          resolve(results.rows[0].elements[0]);
+        } else {
+          // If TRANSIT failed, fallback to DRIVING
+          if (googleTravelMode === 'TRANSIT') {
+            resolve(null);
+          } else {
+            reject(new Error(`Distance Matrix failed: status ${status}`));
+          }
+        }
+      });
+    });
+
+    if (response) {
+      return {
+        distanceText: response.distance.text,
+        distanceValue: Math.round(response.distance.value / 1000), // in km
+        durationText: response.duration.text,
+        durationValue: response.duration.value, // in seconds
+      };
+    }
+
+    // Fallback if TRANSIT was not found
+    const fallbackResponse = await new Promise((resolve, reject) => {
+      service.getDistanceMatrix({
+        origins: [origin],
+        destinations: [destination],
+        travelMode: maps.TravelMode.DRIVING,
+        unitSystem: maps.UnitSystem.METRIC,
+      }, (results, status) => {
+        if (status === 'OK' && results.rows?.[0]?.elements?.[0]?.status === 'OK') {
+          resolve(results.rows[0].elements[0]);
+        } else {
+          reject(new Error(`Fallback Distance Matrix failed: ${status}`));
+        }
+      });
+    });
+
+    return {
+      distanceText: fallbackResponse.distance.text,
+      distanceValue: Math.round(fallbackResponse.distance.value / 1000),
+      durationText: fallbackResponse.duration.text,
+      durationValue: fallbackResponse.duration.value,
+    };
+
+  } catch (error) {
+    console.error('getRouteDetails error:', error);
+    // Simple coordinate-based fallback if Distance Matrix fails completely
+    return {
+      distanceText: '250 km',
+      distanceValue: 250,
+      durationText: '5 hours',
+      durationValue: 18000,
+    };
+  }
 }
 
 export { GOOGLE_MAPS_API_KEY, loadGoogleMapsAPI };

@@ -12,6 +12,7 @@ export default function DashboardPage() {
   const [savedTrips, setSavedTrips] = useState([]);
   const [searchHistory, setSearchHistory] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   // Rename state
   const [editingId, setEditingId] = useState(null);
@@ -41,6 +42,7 @@ export default function DashboardPage() {
         setSearchHistory(history);
       } catch (err) {
         console.error('Dashboard fetch error:', err);
+        setError('Failed to load your trips. Please try again.');
       } finally {
         setLoading(false);
       }
@@ -69,6 +71,7 @@ export default function DashboardPage() {
       setSavedTrips(prev => prev.filter(t => t.id !== tripId));
     } catch (err) {
       console.error('Delete error:', err);
+      setError('Failed to delete trip.');
     }
   };
 
@@ -85,6 +88,7 @@ export default function DashboardPage() {
       setSavedTrips(prev => prev.map(t => t.id === tripId ? { ...t, customName: editName.trim() } : t));
     } catch (err) {
       console.error('Rename error:', err);
+      setError('Failed to rename trip.');
     }
     setEditingId(null);
   };
@@ -101,6 +105,7 @@ export default function DashboardPage() {
       setSavedTrips(prev => prev.map(t => t.id === tripId ? { ...t, group: groupName.trim() } : t));
     } catch (err) {
       console.error('Group error:', err);
+      setError('Failed to update group.');
     }
     setGroupingId(null);
   };
@@ -126,6 +131,7 @@ export default function DashboardPage() {
     } catch (err) {
       console.error('Share error:', err);
       setSharingId(null);
+      setError('Failed to create share link.');
     }
   };
 
@@ -181,9 +187,34 @@ export default function DashboardPage() {
           </button>
         </div>
 
+        {error && (
+          <div className="mb-6 px-4 py-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm flex justify-between items-center">
+            <span>{error}</span>
+            <button onClick={() => setError(null)} className="text-red-400 hover:text-red-300"><X className="w-4 h-4" /></button>
+          </div>
+        )}
+
         {loading ? (
-          <div className="flex items-center justify-center py-20">
-            <Loader2 className="w-8 h-8 text-emerald-400 animate-spin" />
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {[1, 2, 3, 4, 5, 6].map(i => (
+              <div key={i} className="bg-slate-800/50 border border-white/5 rounded-2xl p-5 h-48 animate-pulse">
+                <div className="flex justify-between items-start mb-4">
+                  <div className="space-y-2">
+                    <div className="h-5 bg-slate-700 rounded-md w-32" />
+                    <div className="h-3 bg-slate-700 rounded-md w-24" />
+                  </div>
+                  <div className="h-6 w-12 bg-slate-700 rounded-full" />
+                </div>
+                <div className="space-y-2 mt-6">
+                  <div className="h-3 bg-slate-700 rounded-md w-full" />
+                  <div className="h-3 bg-slate-700 rounded-md w-3/4" />
+                </div>
+                <div className="flex gap-2 mt-4">
+                  <div className="h-4 w-16 bg-slate-700 rounded-md" />
+                  <div className="h-4 w-16 bg-slate-700 rounded-md" />
+                </div>
+              </div>
+            ))}
           </div>
         ) : activeTab === 'saved' ? (
           <>
@@ -244,7 +275,7 @@ export default function DashboardPage() {
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {filteredTrips.map((trip) => (
-                  <div key={trip.id} className="bg-slate-800/50 backdrop-blur-sm border border-white/5 rounded-2xl p-5 hover:border-emerald-500/20 transition-all group relative">
+                  <div key={trip.id} className="bg-slate-800/50 backdrop-blur-sm border border-white/5 rounded-2xl p-5 hover:border-emerald-500/30 hover:shadow-lg hover:shadow-emerald-500/10 hover:-translate-y-1 transition-all duration-300 group relative">
                     {/* Share modal overlay */}
                     {sharingId === trip.id && shareUrl && (
                       <div className="absolute inset-0 z-20 bg-slate-900/95 backdrop-blur-sm rounded-2xl flex flex-col items-center justify-center p-5">

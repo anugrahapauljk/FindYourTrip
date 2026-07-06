@@ -133,6 +133,63 @@ export default function SharedTripPage() {
             )}
           </div>
 
+          {/* Cost breakdown */}
+          {trip.estimatedCost?.breakdown && (() => {
+            const modeEmojis = {
+              car: '🚗',
+              bike: '🏍',
+              bus: '🚌',
+              train: '🚆',
+              flight: '✈'
+            };
+            const labels = {
+              car: 'Car',
+              bike: 'Bike',
+              bus: 'Bus',
+              train: 'Train',
+              flight: 'Flight'
+            };
+            const travelModeKey = trip.travelMode || 'car';
+            const emoji = modeEmojis[travelModeKey] || '🚗';
+            const label = labels[travelModeKey] || 'Car';
+            
+            return (
+              <div className="pt-4 border-t border-white/5 space-y-3">
+                <h4 className="text-sm font-semibold text-slate-300">Budget Breakdown</h4>
+                <div className="space-y-2.5 max-w-md">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-slate-400 flex items-center gap-1.5">
+                      <span>{emoji}</span> Transport ({label})
+                    </span>
+                    <span className="text-white font-medium">₹{(trip.estimatedCost.breakdown.travel || 0).toLocaleString()}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-slate-400 flex items-center gap-1.5">
+                      <span>🏨</span> Stay
+                    </span>
+                    <span className="text-white font-medium">₹{(trip.estimatedCost.breakdown.stay || 0).toLocaleString()}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-slate-400 flex items-center gap-1.5">
+                      <span>🍽</span> Food
+                    </span>
+                    <span className="text-white font-medium">₹{(trip.estimatedCost.breakdown.food || 0).toLocaleString()}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-slate-400 flex items-center gap-1.5">
+                      <span>🎟</span> Activities
+                    </span>
+                    <span className="text-white font-medium">₹{(trip.estimatedCost.breakdown.activities || 0).toLocaleString()}</span>
+                  </div>
+                  <div className="border-t border-white/10 pt-2.5 mt-2.5 flex items-center justify-between font-bold text-white">
+                    <span>Total Estimated Budget</span>
+                    <span>₹{trip.estimatedCost?.min?.toLocaleString()} - ₹{trip.estimatedCost?.max?.toLocaleString()}</span>
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
+
           {/* CTA */}
           <div className="pt-4 border-t border-white/5 text-center">
             <p className="text-sm text-slate-500 mb-4">Want to discover your own perfect destinations?</p>

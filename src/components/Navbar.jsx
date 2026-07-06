@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { Menu, X, LogOut, User, Compass } from 'lucide-react';
+import Logo from './Logo';
 
 export default function Navbar() {
   const { user, signInWithGoogle, logout } = useAuth();
@@ -41,8 +42,8 @@ export default function Navbar() {
         <div className="flex items-center justify-between h-14">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2 group">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-400 to-cyan-400 flex items-center justify-center shadow-lg shadow-emerald-500/20 group-hover:shadow-emerald-500/40 transition-all duration-300 group-hover:scale-105">
-              <Compass className="w-5.5 h-5.5 text-slate-950 animate-spin-slow" />
+            <div className="w-10 h-10 overflow-hidden flex items-center justify-center drop-shadow-[0_0_15px_rgba(52,211,153,0.3)] group-hover:drop-shadow-[0_0_20px_rgba(52,211,153,0.5)] transition-all duration-300 group-hover:scale-105">
+              <Logo className="w-16 h-16 scale-[1.5]" />
             </div>
             <span className="text-xl font-bold bg-gradient-to-r from-emerald-400 via-teal-300 to-cyan-400 bg-clip-text text-transparent tracking-tight">
               FindYourTrip
@@ -85,6 +86,7 @@ export default function Navbar() {
                   onClick={logout}
                   className="p-2 rounded-xl text-slate-400 hover:text-red-400 hover:bg-red-500/10 border border-white/5 hover:border-red-500/20 transition-all duration-300"
                   title="Sign out"
+                  aria-label="Sign out"
                 >
                   <LogOut className="w-4 h-4" />
                 </button>
@@ -93,6 +95,7 @@ export default function Navbar() {
               <button
                 onClick={signInWithGoogle}
                 className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-cyan-500 text-slate-950 text-sm font-semibold hover:shadow-lg hover:shadow-emerald-500/25 transition-all duration-300 hover:-translate-y-0.5"
+                aria-label="Sign In with Google"
               >
                 Sign In
               </button>
@@ -103,6 +106,7 @@ export default function Navbar() {
           <button
             onClick={() => setMobileOpen(!mobileOpen)}
             className="md:hidden p-2 rounded-xl text-slate-400 hover:text-white hover:bg-white/5 border border-white/5"
+            aria-label={mobileOpen ? "Close menu" : "Open menu"}
           >
             {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
